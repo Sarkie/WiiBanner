@@ -18,71 +18,84 @@ namespace WiiBannerWinForms
             InitializeComponent();
         }
 
+        private string _gamesPath = Path.Combine(System.IO.Path.GetDirectoryName(Application.ExecutablePath), @"..\..\..\..\..\games\");
+        private string _toolsPath = Path.Combine(System.IO.Path.GetDirectoryName(Application.ExecutablePath), @"..\..\..\..\..\tools\");
+        private string _bannersPath = Path.Combine(System.IO.Path.GetDirectoryName(Application.ExecutablePath), @"..\..\..\..\..\banners\");
+
         private void LoadBannersButton_Click(object sender, EventArgs e)
         {
-            FolderBrowserDialog fbd = new FolderBrowserDialog();
-            fbd.SelectedPath = Path.GetDirectoryName(@"C:\Work\gitroot\dolphin\WiiBanner\games\");
-
-            DialogResult result = fbd.ShowDialog();
-
-            string[] folders = Directory.GetDirectories(fbd.SelectedPath);
+            string[] folders = Directory.GetDirectories(_gamesPath);
 
             foreach (var folder in folders)
             {
                 DirectoryInfo di = new DirectoryInfo(folder);
 
+                var filePath = _bannersPath + di.Name + ".png";
+
+                if (File.Exists(filePath))
+                    File.Delete(filePath);
+
+                var lst = new ListViewItem();
+
                 switch (di.Name)
                 {
                     case "SMNP01":
-                        BannersListBox.Items.Add(di.Name);
-
-                        var location = "files/EU/save_banner.arc";
-
-                        ExtractARC(folder + location, "./banners/"+di.Name);
 
 
+                        var location = "/files/EU/save_banner.arc";
+
+                        Extract(folder + location);
+
+                        DecodeImage(folder + "/files/EU/save_banner.d/save_banner_EU.bti");
+
+
+                        File.Move(folder + "/files/EU/save_banner.d/save_banner_EU.bti.png", _bannersPath + di.Name + ".png");
+
+                        BannerImageList.Images.Add(Image.FromFile(_bannersPath + di.Name + ".png"));
+
+
+                        lst.Text = di.Name;
+                        lst.ImageIndex = BannerImageList.Images.Count - 1;
+                        BannersListView.Items.Add(lst);
 
                         break;
 
                     case "STUPRN":
-                        BannersListBox.Items.Add(di.Name);
+
+                        DecodeImage(folder + "/DATA/files/banner.tpl");
+
+                        File.Move(folder + "/DATA/files/banner.tpl.png", _bannersPath + di.Name + ".png");
+
+                        BannerImageList.Images.Add(Image.FromFile(_bannersPath + di.Name + ".png"));
+
+                        lst.Text = di.Name;
+                        lst.ImageIndex = BannerImageList.Images.Count - 1;
+                        BannersListView.Items.Add(lst);
 
                         break;
 
                     default:
-                        BannersListBox.Items.Add("Do not have banner config for game:" + di.Name);
+                        BannersListView.Items.Add("Do not have banner config for game:" + di.Name);
                         break;
                 }
             }
+
+            LoadBannersButton.Enabled = false;
         }
 
-        private void ExtractARC(string arcPath, string savePath)
+        private void Extract(string arcPath)
         {
-            //"wszst.ext extract %path%"
+            string appPath = Path.Combine(_toolsPath, @"wiimm\bin\wszst.exe");
 
-            // move contents
-        }
-
-        private void CallWiimmsSZSTool()
-        {
-
-        }
-
-
-        private void ConvertTPLToPNG(string tplPath, string pngPath)
-        {
+            System.Diagnostics.Process.Start(appPath, "extract " + arcPath);
 
         }
 
-        private void ConvertBTIToPNG(string btiPath, string pngBath)
+        private void DecodeImage(string btiPath)
         {
-            // wimgt.exe decode btipath 
-            // will do decoding in the path .png
-        }
+            string appPath = Path.Combine(_toolsPath, @"wiimm\bin\wimgt.exe");
 
-        private void CallWiimmsImageTool(string decodePath)
-        {
-
+            System.Diagnostics.Process.Start(appPath, "decode " + btiPath);
         }
     }
 }
